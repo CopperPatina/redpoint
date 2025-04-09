@@ -1,47 +1,9 @@
-use serde;
+use climbing::library::models::{ClimbingSession, WorkoutSession, ClimbEntry, ClimbMetricsEntry, ExerciseEntry, ClimbStyle};
+use climbing::library::io::{save_log, load_log, log_index};
+
 use std::fs;
 use std::io::Result;
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "lowercase")]
-enum ClimbStyle {
-    Boulder,
-    Rope,
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-struct ClimbEntry {
-    name: Option<String>,
-    grade: String,
-    attempts: u8,
-    sent: bool,
-    reached_top: bool,
-    lead: bool,
-    rests: Option<u8>,
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-struct ClimbMetrics {
-    finger_strength_percent_bw: Option<f32>,
-    max_pullup_percent_bw: Option<f32>,
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-struct ClimbMetricsEntry {
-    date: String,
-    finger_strength_percent_bw: Option<f32>,
-    max_pullup_percent_bw: Option<f32>,
-    notes: Option<String>,
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-struct ClimbingSession {
-    date: String,
-    location: String,
-    style: ClimbStyle,
-    notes: Option<String>,
-    climbs: Vec<ClimbEntry>,
-}
+use clap::Parser;
 
 fn session_to_json(session: &ClimbingSession, file: &str) -> Result<()> {
     let json = serde_json::to_string_pretty(&session)?;
@@ -64,7 +26,32 @@ fn print_sent_climbs(session: &ClimbingSession){
     }
 }
 
+#[derive(Parser)]
+struct Cli {
+    #[arg(short, long)]
+    index: bool,
+    #[arg(short, long)]
+    climb: Option<String>,
+    #[arg(short, long)]
+    workout: Option<String>,
+}
+
 fn main() {
+
+    let cli = Cli::parse();
+
+    if cli.index {
+        match log_index() {
+            Ok(paths) => {
+                for path in paths {
+                    if let Some(filename) = path.file_name().and_then(|f| f.to_str()){
+                        println!("{}", filename);
+                    }
+                }
+            }
+            Err(e) => println!("error {e} getting paths"),
+        }
+    }
 
     let mut climb: Vec<ClimbEntry> = Vec::<ClimbEntry>::new();
     let route = ClimbEntry {
