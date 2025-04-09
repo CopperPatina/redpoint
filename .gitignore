@@ -1,1 +1,3 @@
 /target
+logs/
+ts/node_modules/

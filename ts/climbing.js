@@ -1,5 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+var fs_1 = require("fs");
+var w = {
+    date: "04-06-2025",
+    exercises: [
+        { name: "deadlift", sets: 4, reps: 3, weightLb: 220, isMainLift: true },
+        { name: "squat", sets: 3, reps: 10, weightLb: 150, isMainLift: false },
+        { name: "bulgarian split squat", sets: 3, reps: 8, weightLb: 50, isMainLift: false }
+    ]
+};
 function printSentClimbs(session) {
     var _a;
     var sentClimbs = session.climbs.filter(function (c) { return c.sent; });
@@ -40,6 +49,33 @@ function mainLiftSummary(session) {
         console.log("MAIN LIFT: ".concat(lift.name, " sets: ").concat(lift.sets, " total reps: ").concat(lift.sets * lift.reps, " weight ").concat(lift.weightLb));
     }
 }
+function saveWorkoutLog(workout, file) {
+    var json = JSON.stringify(workout, null, 2);
+    try {
+        (0, fs_1.writeFileSync)(file, json, "utf-8");
+    }
+    catch (error) {
+        console.error("Error saving file {error}");
+    }
+}
+function loadWorkoutLog(file) {
+    try {
+        var workout = (0, fs_1.readFileSync)(file);
+        var session = JSON.parse(workout);
+        return session;
+    }
+    catch (error) {
+        console.error("Error loading file {error}");
+        return null;
+    }
+}
+function workoutFileName(workout) {
+    return "workout-" + workout.date;
+}
 function main() {
+    var filePath = "./logs" + workoutFileName(w);
+    saveWorkoutLog(w, filePath);
+    var wo = loadWorkoutLog(filePath);
+    console.log("{wo}");
 }
 main();
