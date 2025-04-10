@@ -1,5 +1,6 @@
 use climbing::library::models::{ClimbingSession, WorkoutSession, ClimbEntry, ClimbMetricsEntry, ExerciseEntry, ClimbStyle};
 use climbing::library::io::{save_log, load_log, log_index};
+use climbing::library::summary::{print_summary};
 
 use std::fs;
 use std::io::Result;
@@ -34,6 +35,8 @@ struct Cli {
     climb: Option<String>,
     #[arg(short, long)]
     workout: Option<String>,
+    #[arg(long)]
+    summary: bool, 
 }
 
 fn main() {
@@ -51,6 +54,10 @@ fn main() {
             }
             Err(e) => println!("error {e} getting paths"),
         }
+    }
+
+    if cli.summary {
+        print_summary();
     }
 
     let mut climb: Vec<ClimbEntry> = Vec::<ClimbEntry>::new();
