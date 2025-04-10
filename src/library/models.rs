@@ -8,6 +8,7 @@ pub enum ClimbStyle {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ClimbEntry {
     pub name: Option<String>,
     pub grade: String,
@@ -19,6 +20,7 @@ pub struct ClimbEntry {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ClimbMetricsEntry {
     pub date: String,
     pub finger_strength_percent_bw: Option<f32>,
@@ -36,6 +38,7 @@ pub struct ClimbingSession {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ExerciseEntry {
     pub name: String,
     pub sets: u8,
