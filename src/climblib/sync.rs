@@ -14,15 +14,15 @@ pub enum AwsActions {
     Pull,
 }
 
-pub async fn aws_entrypoint(action: AwsActions, bucket_name: &str) {
+pub async fn aws_entrypoint(action: AwsActions, bucket_name: &str, dry_run: bool) {
     let config = defaults(BehaviorVersion::latest()).load().await;
     let client = aws_sdk_s3::Client::new(&config);
 
     if action == AwsActions::Pull {
-        pull(bucket_name, &client).await;
+        pull(bucket_name, &client, dry_run).await;
     }
     else if action == AwsActions::Sync {
-        sync(bucket_name, &client).await;
+        sync(bucket_name, &client, dry_run).await;
     }
 }
 
@@ -78,7 +78,7 @@ async fn upload_log_to_s3(
     Ok(())
 }
 
-async fn pull(bucket_name: &str, client: &aws_sdk_s3::Client) {
+async fn pull(bucket_name: &str, client: &aws_sdk_s3::Client, dry_run: bool) {
     let existing_paths = match log_index() {
         Ok(paths) => paths,
         Err(e) => {
@@ -100,9 +100,14 @@ async fn pull(bucket_name: &str, client: &aws_sdk_s3::Client) {
                     if !exists_locally {
                         let mut local_path = PathBuf::from("logs");
                         local_path.push(filename);
-                        match download_log_from_s3(bucket_name, &local_path, &key, client).await {
-                            Ok(()) => println!("Downloaded {}", &key),
-                            Err(e) => eprintln!("error {e} downloading {}", &key)
+                        if dry_run {
+                            println!("Would download {}", &key);
+                        }
+                        else {
+                            match download_log_from_s3(bucket_name, &local_path, &key, client).await {
+                                Ok(()) => println!("Downloaded {}", &key),
+                                Err(e) => eprintln!("error {e} downloading {}", &key)
+                            }
                         }
                     }
                 }
@@ -112,7 +117,7 @@ async fn pull(bucket_name: &str, client: &aws_sdk_s3::Client) {
     }
 }
 
-async fn sync(bucket_name: &str, client: &aws_sdk_s3::Client) {
+async fn sync(bucket_name: &str, client: &aws_sdk_s3::Client, dry_run: bool) {
     match log_index() {
         Ok(paths) => {
             for path in paths {
@@ -126,10 +131,14 @@ async fn sync(bucket_name: &str, client: &aws_sdk_s3::Client) {
                     } else {
                         continue;
                     };
-
-                    match upload_log_to_s3(bucket_name, &bucket_path, &path, client).await {
-                        Ok(_) => println!("Uploaded {}", bucket_path),
-                        Err(e) => eprintln!("error {e} uploading {}", bucket_path),
+                    if dry_run {
+                        println!("Uploaded {}", bucket_path);
+                    }
+                    else {
+                        match upload_log_to_s3(bucket_name, &bucket_path, &path, client).await {
+                            Ok(_) => println!("Would upload {}", bucket_path),
+                            Err(e) => eprintln!("error {e} uploading {}", bucket_path),
+                        }
                     }
                 }
             }

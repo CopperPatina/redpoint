@@ -19,6 +19,8 @@ struct Cli {
     sync: bool, 
     #[arg(long)]
     pull: bool,
+    #[arg(long)]
+    dry_run: bool,
 }
 
 #[tokio::main]
@@ -46,10 +48,10 @@ async fn main() {
     }
 
     if cli.sync {
-        aws_entrypoint(AwsActions::Sync, &bucket).await;
+        aws_entrypoint(AwsActions::Sync, &bucket, cli.dry_run).await;
     }
 
     if cli.pull {
-        aws_entrypoint(AwsActions::Pull, &bucket).await;
+        aws_entrypoint(AwsActions::Pull, &bucket, cli.dry_run).await;
     }
 }
