@@ -5,6 +5,7 @@ use aws_sdk_s3;
 use aws_config::defaults;
 use aws_config::BehaviorVersion;
 use tokio;
+use std::collections::HashSet;
 use std::error::Error;
 use std::path::{PathBuf, Path};
 
@@ -14,15 +15,41 @@ pub enum AwsActions {
     Pull,
 }
 
-pub async fn aws_entrypoint(action: AwsActions, bucket_name: &str, dry_run: bool) {
+pub async fn aws_entrypoint(
+    action: AwsActions, 
+    bucket_name: &str, 
+    dry_run: bool) {
     let config = defaults(BehaviorVersion::latest()).load().await;
     let client = aws_sdk_s3::Client::new(&config);
 
+    let remote_keys: HashSet<String> = match list_aws_files(bucket_name, &client).await {
+        Ok(resp) => resp
+            .contents()
+            .iter()
+            .filter_map(|o| o.key().map(|s| s.to_string()))
+            .collect(),
+        Err(e) => {
+            eprintln!("Error listing S3 keys: {e}");
+            return;
+        }
+    };
+
+    let local_paths: HashSet<String> = match log_index() {
+        Ok(paths) => paths
+                .iter()
+                .filter_map(|p| p.file_name()?.to_str().map(|s| s.to_string()))
+                .collect(),
+        Err(e) => {
+            eprintln!("Error getting local logs: {e}");
+            return;
+        }
+    };
+
     if action == AwsActions::Pull {
-        pull(bucket_name, &client, dry_run).await;
+        pull(bucket_name, &client, dry_run, &remote_keys, &local_paths).await;
     }
     else if action == AwsActions::Sync {
-        sync(bucket_name, &client, dry_run).await;
+        sync(bucket_name, &client, dry_run, &remote_keys, &local_paths).await;
     }
 }
 
@@ -47,13 +74,11 @@ async fn download_log_from_s3(
 
 async fn list_aws_files(
     bucket_name: &str, 
-    prefix: &str, 
     client: &aws_sdk_s3::Client
 ) -> Result<aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Output, Box<dyn Error>> {
     let response = client
                     .list_objects_v2()
                     .bucket(bucket_name)
-                    .prefix(prefix)
                     .send()
                     .await?;
     Ok(response)
@@ -78,71 +103,62 @@ async fn upload_log_to_s3(
     Ok(())
 }
 
-async fn pull(bucket_name: &str, client: &aws_sdk_s3::Client, dry_run: bool) {
-    let existing_paths = match log_index() {
-        Ok(paths) => paths,
-        Err(e) => {
-            eprintln!("error {e} getting paths");
-            return;
-        }
-    };
+async fn pull(
+    bucket_name: &str, 
+    client: &aws_sdk_s3::Client, 
+    dry_run: bool,
+    remote_keys: &HashSet<String>,
+    local_paths: &HashSet<String>) {
 
-    match list_aws_files(bucket_name, "", client).await {
-        Ok(response) => {
-            for object in response.contents() {
-                if let Some(key) = object.key() {
-                    let filename = key.split('/').last().unwrap_or("unknown.json").to_string();
-                    let exists_locally = existing_paths.iter().any(|path| {
-                        path.file_name()
-                         .and_then(|f| f.to_str())
-                         .map_or(false, |name| name == filename)
-                    });
-                    if !exists_locally {
-                        let mut local_path = PathBuf::from("logs");
-                        local_path.push(filename);
-                        if dry_run {
-                            println!("Would download {}", &key);
-                        }
-                        else {
-                            match download_log_from_s3(bucket_name, &local_path, &key, client).await {
-                                Ok(()) => println!("Downloaded {}", &key),
-                                Err(e) => eprintln!("error {e} downloading {}", &key)
-                            }
-                        }
-                    }
+    for key in remote_keys {
+        let filename = key.split('/').last().unwrap_or("unknown.json").to_string();
+        let exists_locally = local_paths.contains(&filename);
+        if !exists_locally {
+            let mut local_path = PathBuf::from("logs");
+            local_path.push(filename);
+            if dry_run {
+                println!("Would download {}", &key);
+            }
+            else {
+                match download_log_from_s3(bucket_name, &local_path, &key, client).await {
+                    Ok(()) => println!("Downloaded {}", &key),
+                    Err(e) => eprintln!("error {e} downloading {}", &key)
                 }
             }
-        },
-        Err(e) => eprintln!("Error pulling files {}", {e})
+        }
     }
 }
 
-async fn sync(bucket_name: &str, client: &aws_sdk_s3::Client, dry_run: bool) {
-    match log_index() {
-        Ok(paths) => {
-            for path in paths {
-                if let Some(filename) = path.file_name().and_then(|f| f.to_str()) {
-                    let bucket_path = if is_climb(&path) {
-                        format!("climbs/{}", filename)
-                    } else if is_workout(&path) {
-                        format!("workouts/{}", filename)
-                    } else if is_metrics(&path) {
-                        format!("metrics/{}", filename)
-                    } else {
-                        continue;
-                    };
-                    if dry_run {
-                        println!("Uploaded {}", bucket_path);
-                    }
-                    else {
-                        match upload_log_to_s3(bucket_name, &bucket_path, &path, client).await {
-                            Ok(_) => println!("Would upload {}", bucket_path),
-                            Err(e) => eprintln!("error {e} uploading {}", bucket_path),
-                        }
-                    }
+async fn sync(
+    bucket_name: &str, 
+    client: &aws_sdk_s3::Client, 
+    dry_run: bool,
+    remote_keys: &HashSet<String>,
+    local_paths: &HashSet<String>) {
+
+    for filename in local_paths {
+        let mut path = PathBuf::from("logs");
+        path.push(filename);
+        let bucket_path = if is_climb(&path) {
+            format!("climbs/{}", filename)
+        } else if is_workout(&path) {
+            format!("workouts/{}", filename)
+        } else if is_metrics(&path) {
+            format!("metrics/{}", filename)
+        } else {
+            continue;
+        };
+        let exists_remotely = remote_keys.contains(&bucket_path);
+        if !exists_remotely {
+            if dry_run {
+                println!("Uploaded {}", bucket_path);
+            }
+            else {
+                match upload_log_to_s3(bucket_name, &bucket_path, &path, client).await {
+                    Ok(_) => println!("Would upload {}", bucket_path),
+                    Err(e) => eprintln!("error {e} uploading {}", bucket_path),
                 }
             }
         }
-        Err(e) => eprintln!("error {e} getting paths"),
     }
 }
