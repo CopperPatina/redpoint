@@ -1,6 +1,6 @@
-use climbing::library::io::{log_index};
-use climbing::library::summary::{print_summary};
-use climbing::library::sync::{sync};
+use climbing::climblib::io::{log_index};
+use climbing::climblib::summary::{print_summary};
+use climbing::climblib::sync::{aws_entrypoint, AwsActions};
 
 use clap::Parser;
 use tokio;
@@ -17,8 +17,14 @@ struct Cli {
     summary: bool, 
     #[arg(long)]
     sync: bool, 
+    #[arg(long)]
+    pull: bool,
 }
-fn main() {
+
+#[tokio::main]
+async fn main() {
+
+    let bucket = "my-climblog-bucket".to_string();
 
     let cli = Cli::parse();
 
@@ -40,9 +46,10 @@ fn main() {
     }
 
     if cli.sync {
-        match tokio::runtime::Runtime::new() {
-            Ok(rt) => rt.block_on(sync()),
-            Err(e) => eprintln!("Failed to start async runtime: {}", e),
-        }
+        aws_entrypoint(AwsActions::Sync, &bucket).await;
+    }
+
+    if cli.pull {
+        aws_entrypoint(AwsActions::Pull, &bucket).await;
     }
 }
