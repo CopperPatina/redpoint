@@ -44,7 +44,7 @@ fn is_metrics(path: &PathBuf) -> bool {
 
 async fn download_log_from_s3(
     bucket_name: &str, 
-    path: &str,
+    path: &PathBuf,
     key: &str, 
     client: &aws_sdk_s3::Client
 ) -> Result<(), Box<dyn Error>> {
@@ -78,7 +78,7 @@ async fn list_aws_files(
 async fn upload_log_to_s3(
     bucket_name: &str, 
     key: &str, 
-    path: &str, 
+    path: &PathBuf, 
     client: &aws_sdk_s3::Client
 ) -> Result<(), Box<dyn Error>> {
 
@@ -95,28 +95,28 @@ async fn upload_log_to_s3(
 }
 
 async fn pull(bucket_name: &str, client: &aws_sdk_s3::Client) {
-    let mut paths = vec![];
-
-    match log_index() {
-        Ok(path) => {
-            paths = path;
-        },
-        Err(e) => eprintln!("error {} getting paths", e),
-    }
+    let existing_paths = match log_index() {
+        Ok(paths) => paths,
+        Err(e) => {
+            eprintln!("error {e} getting paths");
+            return;
+        }
+    };
 
     match list_aws_files(bucket_name, "", client).await {
         Ok(response) => {
             for object in response.contents() {
                 if let Some(key) = object.key() {
-                    let key_exists_locally = paths.iter().any(|p| {
-                        p.file_name()
+                    let filename = key.split('/').last().unwrap_or("unknown.json").to_string();
+                    let exists_locally = existing_paths.iter().any(|path| {
+                        path.file_name()
                          .and_then(|f| f.to_str())
-                         .map(|name| key.ends_with(name))
-                         .unwrap_or(false)
+                         .map_or(false, |name| name == filename)
                     });
-                    if !key_exists_locally {
-                        let local_path = format!("logs/{}", key.split('/').last().unwrap_or("unknown.json"));
-                        match download_log_from_s3(bucket_name, &key, &local_path, client).await {
+                    if !exists_locally {
+                        let mut local_path = PathBuf::from("logs");
+                        local_path.push(filename);
+                        match download_log_from_s3(bucket_name, &local_path, &key, client).await {
                             Ok(()) => println!("Downloaded {}", &key),
                             Err(e) => eprintln!("error {e} downloading {}", &key)
                         }
@@ -143,7 +143,7 @@ async fn sync(bucket_name: &str, client: &aws_sdk_s3::Client) {
                         continue;
                     };
 
-                    match upload_log_to_s3(bucket_name, &bucket_path, path.to_str().unwrap(), client).await {
+                    match upload_log_to_s3(bucket_name, &bucket_path, &path, client).await {
                         Ok(_) => println!("Uploaded {}", bucket_path),
                         Err(e) => eprintln!("error {e} uploading {}", bucket_path),
                     }
