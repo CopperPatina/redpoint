@@ -6,7 +6,7 @@ use aws_config::defaults;
 use aws_config::BehaviorVersion;
 use tokio;
 use std::error::Error;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 
 #[derive(PartialEq)]
 pub enum AwsActions {
@@ -28,7 +28,7 @@ pub async fn aws_entrypoint(action: AwsActions, bucket_name: &str) {
 
 async fn download_log_from_s3(
     bucket_name: &str, 
-    path: &PathBuf,
+    path: &Path,
     key: &str, 
     client: &aws_sdk_s3::Client
 ) -> Result<(), Box<dyn Error>> {
@@ -62,7 +62,7 @@ async fn list_aws_files(
 async fn upload_log_to_s3(
     bucket_name: &str, 
     key: &str, 
-    path: &PathBuf, 
+    path: &Path, 
     client: &aws_sdk_s3::Client
 ) -> Result<(), Box<dyn Error>> {
 
