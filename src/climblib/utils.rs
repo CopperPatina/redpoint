@@ -29,3 +29,39 @@ pub fn infer_log_type(path: &PathBuf) -> Option<&'static str> {
         None
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    fn path(filename: &str) -> PathBuf {
+        PathBuf::from(format!("logs/{}", filename))
+    }
+
+    #[test]
+    fn test_is_climb() {
+        assert!(is_climb(&path("2024-04-01_climb.json")));
+        assert!(!is_climb(&path("2024-04-01_workout.json")));
+    }
+
+    #[test]
+    fn test_is_workout() {
+        assert!(is_workout(&path("2024-04-01_workout.json")));
+        assert!(!is_workout(&path("2024-04-01_climb.json")));
+    }
+
+    #[test]
+    fn test_is_metrics() {
+        assert!(is_metrics(&path("2024-04-01_metrics.json")));
+        assert!(!is_metrics(&path("2024-04-01_climb.json")));
+    }
+
+    #[test]
+    fn test_infer_log_type() {
+        assert_eq!(infer_log_type(&path("2024-04-01_climb.json")), Some("climb"));
+        assert_eq!(infer_log_type(&path("2024-04-01_workout.json")), Some("workout"));
+        assert_eq!(infer_log_type(&path("2024-04-01_metrics.json")), Some("metrics"));
+        assert_eq!(infer_log_type(&path("2024-04-01_unknown.json")), None);
+    }
+}
