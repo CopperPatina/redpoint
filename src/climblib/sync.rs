@@ -4,6 +4,7 @@ use aws_config::defaults;
 use aws_config::BehaviorVersion;
 use tokio;
 use std::error::Error;
+use std::path::PathBuf;
 
 #[derive(PartialEq)]
 pub enum AwsActions {
@@ -21,6 +22,24 @@ pub async fn aws_entrypoint(action: AwsActions, bucket_name: &str) {
     else if action == AwsActions::Sync {
         sync(bucket_name, &client).await;
     }
+}
+
+fn is_climb(path: &PathBuf) -> bool {
+    path.file_name()
+        .and_then(|f| f.to_str())
+        .map_or(false, |name| name.contains("climb"))
+}
+
+fn is_workout(path: &PathBuf) -> bool {
+    path.file_name()
+        .and_then(|f| f.to_str())
+        .map_or(false, |name| name.contains("workout"))
+}
+
+fn is_metrics(path: &PathBuf) -> bool {
+    path.file_name()
+        .and_then(|f| f.to_str())
+        .map_or(false, |name| name.contains("metrics"))
 }
 
 async fn download_log_from_s3(
@@ -113,23 +132,24 @@ async fn sync(bucket_name: &str, client: &aws_sdk_s3::Client) {
     match log_index() {
         Ok(paths) => {
             for path in paths {
-                if let Some(filename) = path.file_name().and_then(|f| f.to_str()){
-                    let mut bucket_path = String::new();
-                    let full_path = "logs/".to_string() + &filename;
-                    if filename.contains("climb") {
-                        bucket_path = format!("climbs/{}", filename);
-                    } else if filename.contains("workout") {
-                        bucket_path = format!("workouts/{}", filename);
-                    } else if filename.contains("metrics") {
-                        bucket_path = format!("metrics/{}", filename);
-                    }
-                    match upload_log_to_s3(&bucket_name, &bucket_path, &full_path, &client).await {
-                        Ok(()) => println!("Uploaded {}", &bucket_path),
-                        Err(e) => eprintln!("error {e} uploading {}", &bucket_path)
+                if let Some(filename) = path.file_name().and_then(|f| f.to_str()) {
+                    let bucket_path = if is_climb(&path) {
+                        format!("climbs/{}", filename)
+                    } else if is_workout(&path) {
+                        format!("workouts/{}", filename)
+                    } else if is_metrics(&path) {
+                        format!("metrics/{}", filename)
+                    } else {
+                        continue;
+                    };
+
+                    match upload_log_to_s3(bucket_name, &bucket_path, path.to_str().unwrap(), client).await {
+                        Ok(_) => println!("Uploaded {}", bucket_path),
+                        Err(e) => eprintln!("error {e} uploading {}", bucket_path),
                     }
                 }
             }
         }
-        Err(e) => eprintln!("error {} getting paths", e),
+        Err(e) => eprintln!("error {e} getting paths"),
     }
 }
