@@ -1,0 +1,135 @@
+use super::io::{log_index};
+use aws_sdk_s3;
+use aws_config::defaults;
+use aws_config::BehaviorVersion;
+use tokio;
+use std::error::Error;
+
+#[derive(PartialEq)]
+pub enum AwsActions {
+    Sync,
+    Pull,
+}
+
+pub async fn aws_entrypoint(action: AwsActions, bucket_name: &str) {
+    let config = defaults(BehaviorVersion::latest()).load().await;
+    let client = aws_sdk_s3::Client::new(&config);
+
+    if action == AwsActions::Pull {
+        pull(bucket_name, &client).await;
+    }
+    else if action == AwsActions::Sync {
+        sync(bucket_name, &client).await;
+    }
+}
+
+async fn download_log_from_s3(
+    bucket_name: &str, 
+    path: &str,
+    key: &str, 
+    client: &aws_sdk_s3::Client
+) -> Result<(), Box<dyn Error>> {
+    let response = client
+                    .get_object()
+                    .bucket(bucket_name)
+                    .key(key)
+                    .send()
+                    .await?;
+
+    let data = response.body.collect().await?.into_bytes();
+    tokio::fs::write(path, data).await?;
+
+    Ok(())
+}
+
+async fn list_aws_files(
+    bucket_name: &str, 
+    prefix: &str, 
+    client: &aws_sdk_s3::Client
+) -> Result<aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Output, Box<dyn Error>> {
+    let response = client
+                    .list_objects_v2()
+                    .bucket(bucket_name)
+                    .prefix(prefix)
+                    .send()
+                    .await?;
+    Ok(response)
+}
+
+async fn upload_log_to_s3(
+    bucket_name: &str, 
+    key: &str, 
+    path: &str, 
+    client: &aws_sdk_s3::Client
+) -> Result<(), Box<dyn Error>> {
+
+    let body = tokio::fs::read(path).await?;
+
+    client.put_object()
+    .bucket(bucket_name)
+    .key(key)
+    .body(body.into())
+    .send()
+    .await?;
+
+    Ok(())
+}
+
+async fn pull(bucket_name: &str, client: &aws_sdk_s3::Client) {
+    let mut paths = vec![];
+
+    match log_index() {
+        Ok(path) => {
+            paths = path;
+        },
+        Err(e) => eprintln!("error {} getting paths", e),
+    }
+
+    match list_aws_files(bucket_name, "", client).await {
+        Ok(response) => {
+            for object in response.contents() {
+                if let Some(key) = object.key() {
+                    let key_exists_locally = paths.iter().any(|p| {
+                        p.file_name()
+                         .and_then(|f| f.to_str())
+                         .map(|name| key.ends_with(name))
+                         .unwrap_or(false)
+                    });
+                    if !key_exists_locally {
+                        let local_path = format!("logs/{}", key.split('/').last().unwrap_or("unknown.json"));
+                        match download_log_from_s3(bucket_name, &key, &local_path, client).await {
+                            Ok(()) => println!("Downloaded {}", &key),
+                            Err(e) => eprintln!("error {e} downloading {}", &key)
+                        }
+                    }
+                }
+            }
+        },
+        Err(e) => eprintln!("Error pulling files {}", {e})
+    }
+}
+
+async fn sync(bucket_name: &str, client: &aws_sdk_s3::Client) {
+    match log_index() {
+        Ok(paths) => {
+            for path in paths {
+                if let Some(filename) = path.file_name().and_then(|f| f.to_str()){
+                    let mut bucket_path = String::new();
+                    let full_path = "logs/".to_string() + &filename;
+                    if filename.contains("climb") {
+                        bucket_path = format!("climbs/{}", filename);
+                    } else if filename.contains("workout") {
+                        bucket_path = format!("workouts/{}", filename);
+                    } else if filename.contains("metrics") {
+                        bucket_path = format!("metrics/{}", filename);
+                    }
+                    match upload_log_to_s3(&bucket_name, &bucket_path, &full_path, &client).await {
+                        Ok(()) => println!("Uploaded {}", &bucket_path),
+                        Err(e) => eprintln!("error {e} uploading {}", &bucket_path)
+                    }
+                }
+            }
+        }
+        Err(e) => eprintln!("error {} getting paths", e),
+    }
+}
