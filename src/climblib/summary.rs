@@ -1,24 +1,6 @@
 use super::io::{load_log, log_index};
 use super::models::{ClimbingSession, WorkoutSession, ClimbMetricsEntry};
-use std::path::PathBuf;
-
-fn is_climb(path: &PathBuf) -> bool {
-    path.file_name()
-        .and_then(|f| f.to_str())
-        .map_or(false, |name| name.contains("climb"))
-}
-
-fn is_workout(path: &PathBuf) -> bool {
-    path.file_name()
-        .and_then(|f| f.to_str())
-        .map_or(false, |name| name.contains("workout"))
-}
-
-fn is_metrics(path: &PathBuf) -> bool {
-    path.file_name()
-        .and_then(|f| f.to_str())
-        .map_or(false, |name| name.contains("metrics"))
-}
+use super::utils::{is_climb, is_workout, is_metrics};
 
 pub fn print_summary() {
     let mut num_climbs = 0;

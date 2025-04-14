@@ -1,4 +1,6 @@
 use super::io::{log_index};
+use super::utils::{is_climb, is_workout, is_metrics};
+
 use aws_sdk_s3;
 use aws_config::defaults;
 use aws_config::BehaviorVersion;
@@ -22,24 +24,6 @@ pub async fn aws_entrypoint(action: AwsActions, bucket_name: &str) {
     else if action == AwsActions::Sync {
         sync(bucket_name, &client).await;
     }
-}
-
-fn is_climb(path: &PathBuf) -> bool {
-    path.file_name()
-        .and_then(|f| f.to_str())
-        .map_or(false, |name| name.contains("climb"))
-}
-
-fn is_workout(path: &PathBuf) -> bool {
-    path.file_name()
-        .and_then(|f| f.to_str())
-        .map_or(false, |name| name.contains("workout"))
-}
-
-fn is_metrics(path: &PathBuf) -> bool {
-    path.file_name()
-        .and_then(|f| f.to_str())
-        .map_or(false, |name| name.contains("metrics"))
 }
 
 async fn download_log_from_s3(
