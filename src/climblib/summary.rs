@@ -1,7 +1,7 @@
 use super::io::{load_log, log_index};
 use super::models::{ClimbingSession, WorkoutSession, ClimbMetricsEntry};
 use super::utils::{is_climb, is_workout, is_metrics};
-use tracing::{error};
+use tracing::{info, error};
 
 pub fn print_summary() {
     let mut num_climbs = 0;
@@ -38,14 +38,14 @@ pub fn print_summary() {
         }
         Err(e) => error!("error {e} getting paths"),
     }
-    println!("Number of climbs: {num_climbs}");
-    println!("Number of workouts: {num_workouts}");
-    println!("Number of metrics: {num_metrics}");
+    info!("Number of climbs: {num_climbs}");
+    info!("Number of workouts: {num_workouts}");
+    info!("Number of metrics: {num_metrics}");
 }
 
 pub fn print_sent_climbs(session: &ClimbingSession){
     for climb in session.climbs.iter().filter(|c| c.sent) {
-        println!(
+        info!(
             "- Grade: {}, Attempts: {}, Rests: {:?}",
             climb.grade, climb.attempts, climb.rests.unwrap_or(0)
         );

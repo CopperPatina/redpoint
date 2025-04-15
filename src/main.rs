@@ -25,7 +25,7 @@ struct Cli {
 
 #[tokio::main]
 async fn main() {
-
+    tracing_subscriber::fmt::init();
     let bucket = "my-climblog-bucket".to_string();
     let cli = Cli::parse();
 

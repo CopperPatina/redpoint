@@ -51,7 +51,7 @@ pub fn print_log_index() {
         Ok(paths) => {
             for path in paths {
                 if let Some(filename) = path.file_name().and_then(|f| f.to_str()){
-                    println!("{}", filename);
+                    info!("{}", filename);
                 }
             }
         }
