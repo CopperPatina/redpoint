@@ -58,3 +58,43 @@ pub fn print_log_index() {
         Err(e) => error!("error {e} getting paths"),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+    use std::path::PathBuf;
+    use serde::{Serialize, Deserialize};
+
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    struct DummyWorkout {
+        name: String,
+        sets: u8,
+        reps: u8,
+    }
+    
+    fn test_save_and_load_log_roundtrip() {
+        let temp = tempdir().unwrap();
+        let filename = "test_workout.json";
+        let mut path = PathBuf::from(temp.path());
+        path.push(filename);
+
+        let workout = DummyWorkout {
+            name: "Deadlift".into(),
+            sets: 3,
+            reps: 5,
+        };
+
+        // Write log
+        save_log(&workout, path.to_str().unwrap()).expect("Failed to save");
+
+        // Read log back
+        let mut loaded: DummyWorkout = DummyWorkout {name: "".to_string(),sets: 0,reps: 0};
+        match load_log(&path) {
+            Ok(workout) => loaded = workout,
+            Err(e) => error!("Failed to load {}", e)
+        };
+
+        assert_eq!(workout, loaded);
+    }
+}
