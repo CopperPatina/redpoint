@@ -1,6 +1,7 @@
 use super::io::{load_log, log_index};
 use super::models::{ClimbingSession, WorkoutSession, ClimbMetricsEntry};
 use super::utils::{is_climb, is_workout, is_metrics};
+use tracing::{error};
 
 pub fn print_summary() {
     let mut num_climbs = 0;
@@ -14,7 +15,7 @@ pub fn print_summary() {
                         Ok(c) => {
                             num_climbs += c.climbs.len();
                         }
-                        Err(e) => eprintln!("error {e} loading file {:?}", path),
+                        Err(e) => error!("error {e} loading file {:?}", path),
                     }
                 }
                 else if is_workout(&path) {
@@ -22,7 +23,7 @@ pub fn print_summary() {
                     Ok(_w) => {
                         num_workouts += 1;
                     }
-                    Err(e) => eprintln!("error {e} loading file {:?}", path),
+                    Err(e) => error!("error {e} loading file {:?}", path),
                     }
                 }
                 else if is_metrics(&path) {
@@ -30,12 +31,12 @@ pub fn print_summary() {
                     Ok(_m) => {
                         num_metrics += 1;
                     }
-                    Err(e) => eprintln!("error {e} loading file {:?}", path),
+                    Err(e) => error!("error {e} loading file {:?}", path),
                     }
                 }
             }
         }
-        Err(e) => eprintln!("error {e} getting paths"),
+        Err(e) => error!("error {e} getting paths"),
     }
     println!("Number of climbs: {num_climbs}");
     println!("Number of workouts: {num_workouts}");

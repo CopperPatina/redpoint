@@ -3,6 +3,7 @@ use std::io::{self, Write, Result};
 use std::path::{PathBuf, Path};
 use serde_json::{to_string_pretty, from_str};
 use serde::{Serialize, de::DeserializeOwned};
+use tracing::{error, warn};
 
 pub fn save_log<T: Serialize>(data: &T, filename: &str) -> Result<()> {
     let mut path = PathBuf::from("logs");
@@ -26,7 +27,7 @@ pub fn log_index() -> Result<Vec<PathBuf>> {
 
     // Ensure the directory exists
     if !std::path::Path::new(log_dir).exists() {
-        println!("Log directory not found: {log_dir}");
+        warn!("Log directory not found: {log_dir}");
         return Ok(vec![]); // Return an empty list instead of panicking
     }
 
@@ -37,7 +38,7 @@ pub fn log_index() -> Result<Vec<PathBuf>> {
         let path = entry?.path();
         let filename = path.file_name().and_then(|f| f.to_str()).unwrap_or("");
     
-        if filename.contains("workout") || filename.contains("climb") {
+        if filename.contains("workout") || filename.contains("climb") || filename.contains("metrics") {
             files.push(path);
         }
     }
