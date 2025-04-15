@@ -3,7 +3,7 @@ use std::io::{self, Write, Result};
 use std::path::{PathBuf, Path};
 use serde_json::{to_string_pretty, from_str};
 use serde::{Serialize, de::DeserializeOwned};
-use tracing::{error, warn};
+use tracing::{info, error, warn};
 
 pub fn save_log<T: Serialize>(data: &T, filename: &str) -> Result<()> {
     let mut path = PathBuf::from("logs");
