@@ -152,14 +152,63 @@ async fn sync(
         let exists_remotely = remote_keys.contains(&bucket_path);
         if !exists_remotely {
             if dry_run {
-                info!("Uploaded {}", bucket_path);
+                info!("Would upload {}", bucket_path);
             }
             else {
                 match upload_log_to_s3(bucket_name, &bucket_path, &path, client).await {
-                    Ok(_) => info!("Would upload {}", bucket_path),
+                    Ok(_) => info!("Uploaded {}", bucket_path),
                     Err(e) => error!("error {e} uploading {}", bucket_path),
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashSet;
+    use tracing_test::traced_test;
+    
+    #[traced_test]
+    #[tokio::test]
+    async fn test_sync_dry_run_logs_expected_uploads() {
+        let local_paths = HashSet::from([
+            "2024-04-01_climb.json".to_string(),
+            "2024-04-02_workout.json".to_string(),
+        ]);
+
+        let remote_keys = HashSet::from([
+            "climbs/2024-04-01_climb.json".to_string(),
+        ]);    
+        
+        let config = defaults(BehaviorVersion::latest()).load().await;
+        let client = aws_sdk_s3::Client::new(&config);
+
+        sync("test-bucket", &client, true, &remote_keys, &local_paths).await;
+
+        assert!(logs_contain("Would upload workouts/2024-04-02_workout.json"));
+        assert!(!logs_contain("climbs/2024-04-01_climb.json"));
+    }
+
+    #[traced_test]
+    #[tokio::test]
+    async fn test_pull_dry_run_logs_expected_uploads() {
+        let local_paths = HashSet::from([
+            "2024-04-01_climb.json".to_string(),
+        ]);
+
+        let remote_keys = HashSet::from([
+            "climbs/2024-04-01_climb.json".to_string(),
+            "workouts/2024-04-02_workout.json".to_string(),
+        ]);    
+        
+        let config = defaults(BehaviorVersion::latest()).load().await;
+        let client = aws_sdk_s3::Client::new(&config);
+
+        pull("test-bucket", &client, true, &remote_keys, &local_paths).await;
+
+        assert!(logs_contain("Would download workouts/2024-04-02_workout.json"));
+        assert!(!logs_contain("climbs/2024-04-01_climb.json"));
     }
 }
