@@ -1,4 +1,4 @@
-use climbing::climblib::io::{log_index};
+use climbing::climblib::io::{print_log_index};
 use climbing::climblib::summary::{print_summary};
 use climbing::climblib::sync::{aws_entrypoint, AwsActions};
 
@@ -27,31 +27,15 @@ struct Cli {
 async fn main() {
 
     let bucket = "my-climblog-bucket".to_string();
-
     let cli = Cli::parse();
 
     if cli.index {
-        match log_index() {
-            Ok(paths) => {
-                for path in paths {
-                    if let Some(filename) = path.file_name().and_then(|f| f.to_str()){
-                        println!("{}", filename);
-                    }
-                }
-            }
-            Err(e) => println!("error {e} getting paths"),
-        }
-    }
-
-    if cli.summary {
+        print_log_index();
+    } else if cli.summary {
         print_summary();
-    }
-
-    if cli.sync {
+    } else if cli.sync {
         aws_entrypoint(AwsActions::Sync, &bucket, cli.dry_run).await;
-    }
-
-    if cli.pull {
+    } else if cli.pull {
         aws_entrypoint(AwsActions::Pull, &bucket, cli.dry_run).await;
     }
 }

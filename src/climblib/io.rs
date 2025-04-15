@@ -44,3 +44,16 @@ pub fn log_index() -> Result<Vec<PathBuf>> {
     
     Ok(files)
 }
+
+pub fn print_log_index() {
+    match log_index() {
+        Ok(paths) => {
+            for path in paths {
+                if let Some(filename) = path.file_name().and_then(|f| f.to_str()){
+                    println!("{}", filename);
+                }
+            }
+        }
+        Err(e) => error!("error {e} getting paths"),
+    }
+}
