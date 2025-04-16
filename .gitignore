@@ -1,3 +1,7 @@
 /target
 logs/
 ts/node_modules/
+ts/climblog/node_modules
+ts/climblog/dist
+.vite
+.DS_Store
