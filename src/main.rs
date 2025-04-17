@@ -1,6 +1,7 @@
 use climbing::climblib::io::{print_log_index};
 use climbing::climblib::summary::{print_summary};
 use climbing::climblib::sync::{aws_entrypoint, AwsActions};
+use climbing::api::server::{start_server};
 
 use clap::Parser;
 use tokio;
@@ -28,6 +29,7 @@ async fn main() {
     tracing_subscriber::fmt::init();
     let bucket = "my-climblog-bucket".to_string();
     let cli = Cli::parse();
+    start_server().await;
 
     if cli.index {
         print_log_index();
