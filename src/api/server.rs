@@ -6,30 +6,43 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use serde_json::json;
 use tracing::{info, error};
 
 
-async fn create_climb(Json(session): Json<ClimbingSession>) -> impl IntoResponse {
+async fn create_climb(Json(session): Json<ClimbingSession>) -> Result<impl IntoResponse, (StatusCode, String)> {
     let filename = session.date.clone() + "-climb.json";
     match save_log(&session, &filename){
-        Ok(_) => info!("Saved {}", &filename),
-        Err(e) => error!("Error saving {} with {}", &filename, e),
+        Ok(_) => { info!("Saved {}", &filename);
+        return Ok((StatusCode::CREATED, Json(json!({ "status": "ok" }))));
+        } ,
+        Err(e) => { error!("Error saving {} with {}", &filename, e);
+        return Err((StatusCode::INTERNAL_SERVER_ERROR, "Could not save log".to_string()));
+        },
     };
 }
 
-async fn create_workout(Json(session): Json<WorkoutSession>) -> impl IntoResponse {
+async fn create_workout(Json(session): Json<WorkoutSession>) -> Result<impl IntoResponse, (StatusCode, String)> {
     let filename = session.date.clone() + "-workout.json";
     match save_log(&session, &filename){
-        Ok(_) => info!("Saved {}", &filename),
-        Err(e) => error!("Error saving {} with {}", &filename, e),
+        Ok(_) => { info!("Saved {}", &filename);
+        return Ok((StatusCode::CREATED, Json(json!({ "status": "ok" }))));
+        } ,
+        Err(e) => { error!("Error saving {} with {}", &filename, e);
+        return Err((StatusCode::INTERNAL_SERVER_ERROR, "Could not save log".to_string()));
+        },
     };
 }
 
-async fn create_metrics(Json(session): Json<ClimbMetricsEntry>) -> impl IntoResponse {
+async fn create_metrics(Json(session): Json<ClimbMetricsEntry>) -> Result<impl IntoResponse, (StatusCode, String)> {
     let filename = session.date.clone() + "-metrics.json";
     match save_log(&session, &filename){
-        Ok(_) => info!("Saved {}", &filename),
-        Err(e) => error!("Error saving {} with {}", &filename, e),
+        Ok(_) => { info!("Saved {}", &filename);
+        return Ok((StatusCode::CREATED, Json(json!({ "status": "ok" }))));
+        } ,
+        Err(e) => { error!("Error saving {} with {}", &filename, e);
+        return Err((StatusCode::INTERNAL_SERVER_ERROR, "Could not save log".to_string()));
+        },
     };
 }
 
