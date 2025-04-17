@@ -8,6 +8,7 @@ use axum::{
 };
 use serde_json::json;
 use tracing::{info, error};
+use tower_http::cors::{CorsLayer, Any};
 
 
 async fn create_climb(Json(session): Json<ClimbingSession>) -> Result<impl IntoResponse, (StatusCode, String)> {
@@ -47,6 +48,11 @@ async fn create_metrics(Json(session): Json<ClimbMetricsEntry>) -> Result<impl I
 }
 
 pub async fn start_server() {
+    let cors = CorsLayer::new()
+    .allow_origin(Any)
+    .allow_methods([axum::http::Method::POST])
+    .allow_headers([axum::http::header::CONTENT_TYPE]);
+
     let app = Router::new()
     .route("/api/logs/climb", post(create_climb))
     .route("/api/logs/workout", post(create_workout))

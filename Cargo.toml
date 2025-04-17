@@ -13,6 +13,7 @@ tokio = { version = "1.37", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 axum = {version = "0.6.20", features = ["headers"]}
+tower-http = { version = "0.4", features = ["cors"] }
 
 [dev-dependencies]
 tracing-test = "0.2"
