@@ -1,4 +1,6 @@
 use std::path::Path;
+use validator::ValidationError;
+use chrono::NaiveDate;
 
 pub fn is_climb(path: &Path) -> bool {
     path.file_name()
@@ -27,6 +29,13 @@ pub fn infer_log_type(path: &Path) -> Option<&'static str> {
         Some("metrics")
     } else {
         None
+    }
+}
+
+pub fn validate_date_format(date: &str) -> Result<(), ValidationError> {
+    match NaiveDate::parse_from_str(date, "%Y-%m-%d") {
+        Ok(_) => Ok(()),
+        Err(_) => Err(ValidationError::new("invalid_date")),
     }
 }
 

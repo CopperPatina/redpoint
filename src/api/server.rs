@@ -3,7 +3,7 @@ use crate::climblib::io::{save_log};
 use axum::{
     http::StatusCode,
     response::{IntoResponse},
-    routing::{get, post},
+    routing::{post},
     Json, Router,
 };
 use serde_json::json;

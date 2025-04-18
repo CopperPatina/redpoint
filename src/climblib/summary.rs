@@ -46,7 +46,7 @@ pub fn print_summary() {
 pub fn print_sent_climbs(session: &ClimbingSession){
     for climb in session.climbs.iter().filter(|c| c.sent) {
         info!(
-            "- Grade: {}, Attempts: {}, Rests: {:?}",
+            "- Grade: {:?}, Attempts: {}, Rests: {:?}",
             climb.grade, climb.attempts, climb.rests.unwrap_or(0)
         );
     }
