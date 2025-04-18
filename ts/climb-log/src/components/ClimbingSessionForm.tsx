@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ClimbingSession, ClimbEntry } from '../types/types';
 
 const ropeGrades = [
@@ -15,14 +15,25 @@ const boulderGrades = [
   "V6", "V7", "V8", "V9", "V10",
 ];
 
+const getDefaultSession = (): ClimbingSession => ({
+  date: new Date().toISOString().split("T")[0],
+  location: 'Movement Columbia',
+  style: 'boulder',
+  notes: '',
+  climbs: [],
+});
+
 const ClimbingSessionForm: React.FC = () => {
-  const [session, setSession] = useState<ClimbingSession>({
-    date: new Date().toISOString().split("T")[0],
-    location: 'Movement Columbia',
-    style: 'rope',
-    notes: '',
-    climbs: [],
-  });
+  const [session, setSession] = useState<ClimbingSession>(getDefaultSession());
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (submitted) {
+      const timer = setTimeout(() => setSubmitted(false), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [submitted]);
 
   const addClimb = () => {
     setSession(prev => ({
@@ -40,6 +51,18 @@ const ClimbingSessionForm: React.FC = () => {
   };
 
   async function submitSession() {
+    setError(null);
+    if (!session.date || !session.location || session.climbs.length === 0) {
+      setError("Please fill out the date, location, and add at least one climb.");
+      return;
+    }
+    for (const climb of session.climbs) {
+      if (!climb.grade) {
+        setError("Each climb must have a grade.");
+        return;
+      }
+    }
+
     try {
       const res = await fetch("http://localhost:3000/api/logs/climb", {
         method: "POST",
@@ -47,16 +70,18 @@ const ClimbingSessionForm: React.FC = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(session),
-      })
+      });
 
       if (res.ok) {
+        setSubmitted(true);
+        setSession(getDefaultSession());
         console.log("Climbing session logged");
-      }
-      else {
+      } else {
+        setError("Failed to log climbing session.");
         console.error("Failed to log climbing session");
       }
-    }
-    catch(err) {
+    } catch (err) {
+      setError("Network or server error. Please try again.");
       console.error("Error with network or server");
     }
   }
@@ -76,6 +101,16 @@ const ClimbingSessionForm: React.FC = () => {
 
   return (
     <div className="max-w-3xl mx-auto p-10 bg-white min-h-screen text-gray-800">
+      {submitted && (
+        <div className="mb-6 p-4 bg-green-100 border border-green-300 text-green-800 rounded">
+          Climbing session saved successfully!
+        </div>
+      )}
+      {error && (
+        <div className="mb-6 p-4 bg-red-100 border border-red-300 text-red-800 rounded">
+          {error}
+        </div>
+      )}
       <form className="space-y-10">
         <div className="space-y-6 border-b pb-6">
           <h2 className="text-xl font-bold text-gray-700">🧗 Session Info</h2>
@@ -128,14 +163,14 @@ const ClimbingSessionForm: React.FC = () => {
               onClick={addClimb}
               className="px-5 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 shadow"
             >
-              ➕ Add Climb
+              Add Climb
             </button>
             <button
               type="button"
               onClick={submitSession}
               className="px-5 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 shadow"
             >
-              📝 Log Session
+              Log Session
             </button>
           </div>
         </div>
@@ -219,7 +254,7 @@ const ClimbingSessionForm: React.FC = () => {
                   onClick={() => removeClimb(index)}
                   className="text-red-600 hover:text-red-800 text-sm font-medium"
                 >
-                  ❌ Remove Climb
+                  Remove Climb
                 </button>
               </div>
             </div>
