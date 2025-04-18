@@ -12,7 +12,8 @@ use tower_http::cors::{CorsLayer, Any};
 
 
 async fn create_climb(Json(session): Json<ClimbingSession>) -> Result<impl IntoResponse, (StatusCode, String)> {
-    let filename = session.date.clone() + "-climb.json";
+    println!("{:?}", session);
+    let filename = "climb-".to_owned() + &session.date + ".json";
     match save_log(&session, &filename){
         Ok(_) => { info!("Saved {}", &filename);
         return Ok((StatusCode::CREATED, Json(json!({ "status": "ok" }))));
@@ -24,7 +25,7 @@ async fn create_climb(Json(session): Json<ClimbingSession>) -> Result<impl IntoR
 }
 
 async fn create_workout(Json(session): Json<WorkoutSession>) -> Result<impl IntoResponse, (StatusCode, String)> {
-    let filename = session.date.clone() + "-workout.json";
+    let filename = "workout-".to_owned() + &session.date + ".json";
     match save_log(&session, &filename){
         Ok(_) => { info!("Saved {}", &filename);
         return Ok((StatusCode::CREATED, Json(json!({ "status": "ok" }))));
@@ -36,7 +37,7 @@ async fn create_workout(Json(session): Json<WorkoutSession>) -> Result<impl Into
 }
 
 async fn create_metrics(Json(session): Json<ClimbMetricsEntry>) -> Result<impl IntoResponse, (StatusCode, String)> {
-    let filename = session.date.clone() + "-metrics.json";
+    let filename = "metrics-".to_owned() + &session.date + ".json";
     match save_log(&session, &filename){
         Ok(_) => { info!("Saved {}", &filename);
         return Ok((StatusCode::CREATED, Json(json!({ "status": "ok" }))));
@@ -56,7 +57,8 @@ pub async fn start_server() {
     let app = Router::new()
     .route("/api/logs/climb", post(create_climb))
     .route("/api/logs/workout", post(create_workout))
-    .route("/api/logs/metrics", post(create_metrics));
+    .route("/api/logs/metrics", post(create_metrics))
+    .layer(cors);
 
     axum::Server::bind(&"127.0.0.1:3000".parse().unwrap())
     .serve(app.into_make_service())

@@ -29,6 +29,7 @@ pub struct ClimbMetricsEntry {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename = "camelCaseName")]
 pub struct ClimbingSession {
     pub date: String,
     pub location: String,
@@ -49,6 +50,7 @@ pub struct ExerciseEntry {
   }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename = "camelCaseName")]
 pub struct WorkoutSession {
     pub date: String,
     pub notes: Option<String>,

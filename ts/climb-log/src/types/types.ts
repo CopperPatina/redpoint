@@ -5,7 +5,7 @@ export interface ClimbEntry {
   grade: string;
   attempts: number;
   sent: boolean;
-  reached_top: boolean;
+  reachedTop: boolean;
   lead: boolean;
   rests?: number;
 }

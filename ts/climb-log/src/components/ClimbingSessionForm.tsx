@@ -17,9 +17,9 @@ const boulderGrades = [
 
 const ClimbingSessionForm: React.FC = () => {
   const [session, setSession] = useState<ClimbingSession>({
-    date: '',
+    date: new Date().toISOString().split("T")[0],
     location: 'Movement Columbia',
-    style: 'boulder',
+    style: 'rope',
     notes: '',
     climbs: [],
   });
@@ -32,12 +32,34 @@ const ClimbingSessionForm: React.FC = () => {
         grade: '',
         attempts: 1,
         sent: false,
-        reached_top: false,
+        reachedTop: false,
         lead: false,
         rests: 0,
       }]
     }));
   };
+
+  async function submitSession() {
+    try {
+      const res = await fetch("http://localhost:3000/api/logs/climb", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(session),
+      })
+
+      if (res.ok) {
+        console.log("Climbing session logged");
+      }
+      else {
+        console.error("Failed to log climbing session");
+      }
+    }
+    catch(err) {
+      console.error("Error with network or server");
+    }
+  }
 
   const updateClimb = (index: number, updated: ClimbEntry) => {
     const climbs = [...session.climbs];
@@ -110,7 +132,7 @@ const ClimbingSessionForm: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => console.log(session)}
+              onClick={submitSession}
               className="px-5 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 shadow"
             >
               📝 Log Session
@@ -171,8 +193,8 @@ const ClimbingSessionForm: React.FC = () => {
                 <label className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
-                    checked={climb.reached_top}
-                    onChange={(e) => updateClimb(index, { ...climb, reached_top: e.target.checked })}
+                    checked={climb.reachedTop}
+                    onChange={(e) => updateClimb(index, { ...climb, reachedTop: e.target.checked })}
                   />
                   Reached Top
                 </label>
