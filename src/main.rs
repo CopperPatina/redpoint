@@ -26,8 +26,9 @@ struct Cli {
 
 #[tokio::main]
 async fn main() {
+    let bucket = std::env::var("BUCKET_NAME").expect("BUCKET_NAME must be set");
+    
     tracing_subscriber::fmt::init();
-    let bucket = "my-climblog-bucket".to_string();
     let cli = Cli::parse();
     start_server().await;
 
