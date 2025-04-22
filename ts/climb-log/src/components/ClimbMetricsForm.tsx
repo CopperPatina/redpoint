@@ -20,12 +20,6 @@ const ClimbingMetricsForm: React.FC = () => {
     }
   }, [submitted]);
 
-  const addMetrics = () => {
-    setSession(prev => ({
-      ...prev
-    }));
-  };
-
   async function submitSession() {
     setError(null);
     if (!session.date) {
@@ -113,6 +107,14 @@ const ClimbingMetricsForm: React.FC = () => {
               rows={3}
             />
           </div>
+
+          <button
+              type="button"
+              onClick={submitSession}
+              className="px-5 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 shadow"
+            >
+              Log Session
+            </button>
 
         </div>
       </form>
