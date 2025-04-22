@@ -1,0 +1,24 @@
+# Climbing Workout Logger
+
+This is a work-in-progress full-stack workout logger designed to track both rock climbing sessions and weightlifting workouts. The project is a log for personal use.
+
+## Tech Stack
+
+- **Frontend**: Vite + React + Tailwind CSS
+- **Backend**: Rust (Axum), JSON file storage (migrating to SQLx)
+- **Analytics (planned)**: Python
+
+## Features
+
+- Log bouldering and rope climbing sessions
+- Log lifting workouts with custom exercises
+- Local persistence and AWS sync
+- Planned: data analytics, save and reuse named workout templates, log visualization
+
+## Status
+
+This project is under active development. It is not yet production-ready, but functional for logging and testing locally.
+
+## License
+
+MIT
