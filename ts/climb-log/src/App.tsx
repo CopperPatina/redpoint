@@ -1,11 +1,12 @@
-import ClimbingSessionForm from './components/ClimbingSessionForm';
+import React from 'react';
+import TabbedWorkoutLogger from './components/TabbedLogger';
 
 function App() {
   return (
-    <div>
-      <h1>Climbing Logger</h1>
-      <ClimbingSessionForm />
+    <div className="bg-gray-50 min-h-screen">
+      <TabbedWorkoutLogger />
     </div>
   );
 }
-export default App
+
+export default App;
