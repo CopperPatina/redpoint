@@ -1,6 +1,6 @@
 # Climbing Workout Logger
 
-This is a work-in-progress full-stack workout logger designed to track both rock climbing sessions and weightlifting workouts. The project is a log for personal use.
+This is a work in progress full stack workout logger designed to track both rock climbing sessions and weightlifting workouts. The project is a log for personal use.
 
 ## Tech Stack
 
@@ -17,7 +17,7 @@ This is a work-in-progress full-stack workout logger designed to track both rock
 
 ## Status
 
-This project is under active development. It is not yet production-ready, but functional for logging and testing locally.
+This project is under active development. It is not yet production ready, but functional for logging and testing locally.
 
 ## License
 
