@@ -11,6 +11,16 @@ pub enum ClimbStyle {
     Rope,
 }
 
+impl fmt::Display for ClimbStyle {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            ClimbStyle::Boulder => "Boulder",
+            ClimbStyle::Rope => "Rope",
+        };
+        write!(f, "{}", s)
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum RopeGrade {
