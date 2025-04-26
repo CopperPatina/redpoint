@@ -1,7 +1,7 @@
-use climbing::climblib::io::{print_log_index};
-use climbing::climblib::summary::{print_summary};
-use climbing::climblib::sync::{aws_entrypoint, AwsActions};
-use climbing::api::server::{start_server};
+use redpoint::climblib::io::{print_log_index};
+use redpoint::climblib::summary::{print_summary};
+use redpoint::climblib::sync::{aws_entrypoint, AwsActions};
+use redpoint::api::server::{start_server};
 
 use clap::Parser;
 use tokio;
