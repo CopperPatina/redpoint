@@ -1,5 +1,5 @@
 [package]
-name = "climbing"
+name = "redpoint"
 version = "0.1.0"
 edition = "2024"
 
@@ -16,7 +16,7 @@ axum = {version = "0.6", features = ["headers"]}
 tower-http = { version = "0.4", features = ["cors"] }
 validator = { version = "0.16", features = ["derive"] }
 chrono = {version = "0.4"}
-sqlx = { version = "0.8", features = [ "postgres", "runtime-tokio", "tls-native-tls", "uuid", "chrono" ] }
+sqlx = { version = "0.8.5", features = [ "postgres", "runtime-tokio", "tls-native-tls", "uuid", "chrono" ] }
 uuid = { version = "1.16.0", features = ["v4"] }
 
 [dev-dependencies]
