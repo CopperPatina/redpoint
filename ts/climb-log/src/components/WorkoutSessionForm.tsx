@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { WorkoutSession, ExerciseEntry } from '../types/types';
+import { safeJSONParse } from '../utils/storage';
 
 const defaultExercises = [
   "deadlift", "squat", "pullups", "dips", "bench press",
@@ -17,9 +18,12 @@ const getDefaultSession = (): WorkoutSession => ({
 const WorkoutSessionForm: React.FC = () => {
   const [session, setSession] = useState<WorkoutSession>(getDefaultSession());
   const [savedExercises, setSavedExercises] = useState<string[]>(() => {
-    const saved = localStorage.getItem("savedExercises");
-    return saved ? JSON.parse(saved) : defaultExercises;
+    return safeJSONParse("savedExercises", defaultExercises);
   });
+  const [savedTemplates, setSavedTemplates] = useState<{ [key: string]: ExerciseEntry[] }>(() => {
+    return safeJSONParse("workoutTemplates", {});
+  });
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [newExercise, setNewExercise] = useState("");
   const [showExerciseEditor, setShowExerciseEditor] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -35,6 +39,22 @@ const WorkoutSessionForm: React.FC = () => {
   const saveExerciseList = (list: string[]) => {
     localStorage.setItem("savedExercises", JSON.stringify(list));
     setSavedExercises(list);
+  };
+
+
+  const saveTemplateList = (list: { [key: string]: ExerciseEntry[] }) => {
+    localStorage.setItem("workoutTemplates", JSON.stringify(list));
+    setSavedTemplates(list);
+  };
+
+  const loadWorkoutTemplate = (templateName: string) => {
+    const template = savedTemplates[templateName];
+    if (template) {
+      setSession(prev => ({
+        ...prev,
+        exercises: template,
+      }));
+    }
   };
 
   const addExerciseToSession = () => {
@@ -210,7 +230,45 @@ const WorkoutSessionForm: React.FC = () => {
               Log Session
             </button>
           </div>
+
+          <div className="flex gap-4 pt-4">
+            <button
+              type="button"
+              onClick={() => {
+                const name = prompt("Enter a name for this workout template:");
+                if (name) {
+                  const updatedTemplates = { ...savedTemplates, [name]: session.exercises };
+                  saveTemplateList(updatedTemplates);
+                }
+              }}
+              className="px-5 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 shadow"
+            >
+              Save As Template
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-1">
+          <label className="font-medium text-sm">Template</label>
+          <select
+            value={selectedTemplate}
+            onChange={(e) => {
+              const selected = e.target.value;
+              setSelectedTemplate(selected);
+              if (selected) {
+                loadWorkoutTemplate(selected);
+              }
+            }}
+            className="border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Load workout template</option>
+            {Object.keys(savedTemplates).map((templateName) => (
+              <option key={templateName} value={templateName}>
+                {templateName}
+              </option>
+            ))}
+          </select>
         </div>
+      </div>
 
         <div className="space-y-10">
           <h2 className="text-xl font-bold text-gray-700">Exercises</h2>

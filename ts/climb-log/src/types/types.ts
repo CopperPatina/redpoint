@@ -39,3 +39,7 @@ export interface WorkoutSession {
   notes?: string;
   exercises: ExerciseEntry[];
 }
+
+export type WorkoutTemplate = {
+  [templateName: string]: ExerciseEntry[];
+};
